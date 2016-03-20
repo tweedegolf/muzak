@@ -46,7 +46,14 @@ let dazeus_client = dazeus.connect(dazeus_options, () => {
             if(typeof argv.pluginhost === 'string') {
                 host = "[" + argv.pluginhost + "] ";
             }
-            dazeus_client.message(network, channel, host + msg);
+            var lines = msg.split("\n").filter((line) => { return line.length > 0; });
+            if(lines.length > 0){
+                for(var i = 0; i < lines.length; i += 1){
+                    lines[i] = host + lines[i];
+                }
+            }
+            msg = lines.join("\n");
+            dazeus_client.message(network, channel, msg);
         }, console.error );
     });
 });
