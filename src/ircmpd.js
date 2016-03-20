@@ -60,6 +60,7 @@ export default class IRCMPD {
     playlistadd(name, song_id){
         var song = this.get_song(song_id);
         return new Promise((resolve, reject) => {
+            if(!name){ throw "There's no playlist for you"; }
             this.mpdc.sendCommand(mpd.cmd("playlistadd", [name, song.id]), (err, msg) => {
                 if (err) {
                     reject(err);
@@ -299,6 +300,13 @@ export default class IRCMPD {
     }
 
     _on_irc_command(network, user, channel, subcommand, args) {
+        var mpd_user = this.nick_to_user(user);
+        if(!mpd_user.playlist){
+            mpd_user.playlist = this.nick_to_playlist(mpd_user.nick);
+            this._commit_users();
+            this._message(network, channel, "Created playlist for " + JSON.stringify(mpd_user));
+        }
+
         var msg;
         if(subcommand === "queue"){
             var ssubcommand = args[0];
@@ -320,11 +328,17 @@ export default class IRCMPD {
         else if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
             msg = this.currentplaying();
         }
-        else if(subcommand === "playlistadd"){
+        else if(subcommand === "playlistadd-raw"){
             msg = this.playlistadd(args[0], args[1]);
         }
-        else if(subcommand === "playlistinfo"){
+        else if(subcommand === "playlistadd"){
+            msg = this.playlistadd(mpd_user.playlist, args[0]);
+        }
+        else if(subcommand === "playlistinfo-raw"){
             msg = this.playlistinfo(args[0]);
+        }
+        else if(subcommand === "playlistinfo"){
+            msg = this.playlistinfo(mpd_user.playlist);
         }
         else if(subcommand === "email") {
             user = this.nick_to_user(user);
@@ -373,6 +387,10 @@ export default class IRCMPD {
         return undefined;
     }
 
+    nick_to_playlist(nick){
+        return nick;
+    }
+
     nick_to_user(nick) {
         for(var i in this.users) {
             if(this.users[i].nick == nick) {
@@ -383,7 +401,7 @@ export default class IRCMPD {
         var user = {
             nick: nick,
             email: [],
-            playlist: undefined /* TODO, create a playlist here */
+            playlist: this.nick_to_playlist(nick)
         };
         this.users.push(user);
         return user;
