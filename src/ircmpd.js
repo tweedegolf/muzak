@@ -46,8 +46,20 @@ export default class IRCMPD {
 
     parse_results() {
         var msg = "";
+        var listed_id = 0;
+        var pretty_results = []
         this.search_results_.forEach((e) => {
-            msg += e.Artist + " - " + e.Title + "\n";
+            var pretty = {};
+            pretty.id = e.file;
+            pretty.listed_id = listed_id;
+            listed_id = listed_id + 1;
+            pretty.artist = e.Artist;
+            pretty.title = e.Title;
+            pretty_results.push(pretty);
+        });
+        this.pretty_search_results_ = pretty_results;
+        this.pretty_search_results_.forEach((e) => {
+            msg += e.listed_id + ": " + e.artist + " - " + e.title + "\n";
         });
         console.log(msg);
         return msg;
