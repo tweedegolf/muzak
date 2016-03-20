@@ -27,7 +27,13 @@ export default class IRCMPD {
             that.mpdc.sendCommand("consume 1", function(err, msg) {
                 if (err) throw err;
             });
-          console.log("ready");
+            that.mpdc.sendCommand("random 0", function(err, msg) {
+                if (err) throw err;
+            });
+            that.mpdc.sendCommand("repeat 0", function(err, msg) {
+                if (err) throw err;
+            });
+            console.log("ready");
         });
         this.mpdc.on('system', function(name) {
           console.log("update", name);
