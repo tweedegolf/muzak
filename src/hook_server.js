@@ -4,6 +4,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import moment from 'moment';
 import _ from 'lodash';
+import karma from './karma';
 
 var app = express();
 
@@ -33,7 +34,8 @@ app.post('/commit', (req, res) => {
     }
 
     _.forEach(data.commits, (commit) => {
-        console.log('Commit by:', commit.author.email);
+        console.log('commit by:', commit.author.email);
+        karma.add(commit.author.email, 2);
     });
 
     res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
@@ -44,6 +46,8 @@ app.post('/issue/:key', function (req, res) {
 
     if (data.webhookEvent === ISSUE_CREATED) {
         console.log('issue created by:', data.user.emailAddress);
+        karma.add(commit.author.email, 1);
+
     } else if (data.webhookEvent === ISSUE_UPDATED)  {
         var action = 'changed';
         _.forEach(data.changelog.items, (item) => {
@@ -51,6 +55,22 @@ app.post('/issue/:key', function (req, res) {
                 action = item.toString;
             }
         });
+
+        switch (action) {
+            case 'closed':
+                karma.add(data.user.emailAddress, 2);
+                break;
+            case 'resolved':
+                karma.add(data.user.emailAddress, 2);
+                break;
+            case 'changed':
+                karma.add(data.user.emailAddress, 1);
+                break;
+            default:
+                // no points for other actions
+                break;
+        }
+
         console.log('issue ' + action + ' by:', data.user.emailAddress);
     }
 
