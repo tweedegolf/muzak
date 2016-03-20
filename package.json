@@ -33,6 +33,7 @@
     "node-persist": "0.0.10",
     "nodemon": "^1.9.1",
     "request": "^2.69.0",
-    "sprintf": "^0.1.5"
+    "sprintf": "^0.1.5",
+    "swig": "^1.4.2"
   }
 }

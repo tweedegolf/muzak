@@ -6,6 +6,7 @@ import moment from 'moment';
 import _ from 'lodash';
 import config from '../config';
 import {sprintf} from 'sprintf';
+import swig from 'swig';
 
 const ISSUE_CREATED = 'jira:issue_created';
 const ISSUE_UPDATED = 'jira:issue_updated';
@@ -35,6 +36,11 @@ export default class HookServer {
             extended: true
         }));
 
+        this.app.engine('html', swig.renderFile);
+        this.app.set('view engine', 'html');
+        this.app.set('views', __dirname + '/../views');
+        this.app.set('view cache', false);
+
         this.register_hooks();
     }
 
@@ -46,7 +52,12 @@ export default class HookServer {
          * Landing page
          */
         this.app.get('/', (req, res) => {
-            res.send('Welcome to MUZAK, please use IRC to interact.');
+            this.ircmpd.currentplaying().then((song_name) => {
+                res.render('index.html', {
+                    table: this.karma.get_factors(),
+                    song_name: song_name
+                });
+            });
         });
 
         /**

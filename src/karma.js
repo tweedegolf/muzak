@@ -42,6 +42,7 @@ export default class Karma {
         this.ircmpd.on('karma-table', () => {
             return new Promise((resolve) => {
                 var table = new AsciiTable();
+                table.setHeading('e-mail', 'karma');
 
                 _.forEach(this.get_table(), ([score, email]) => {
                     table.addRow(email, AsciiTable.align(
@@ -58,6 +59,7 @@ export default class Karma {
         this.ircmpd.on('karma-factors', () => {
             return new Promise((resolve) => {
                 var table = new AsciiTable();
+                table.setHeading('e-mail', 'factor');
 
                 _.forEach(this.get_factors(), (factor, email) => {
                     table.addRow(email, AsciiTable.align(
@@ -157,7 +159,7 @@ export default class Karma {
         var factors = {};
 
         // retrieve the max karma
-        var score_sum = _.sumBy(table, function ([score, email]) {
+        var score_sum = _.sumBy(table, ([score, email]) => {
             factors[email] = 0;
             return score;
         });
