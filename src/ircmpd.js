@@ -1,10 +1,11 @@
 // vi:expandtab sw=4 ts=4
 
 import storage from 'node-persist';
-import * as dazeus from "dazeus";
-import * as dazeus_util from "dazeus-util";
-import * as mpd from "mpd";
-import * as _ from "lodash";
+import dazeus from "dazeus";
+import dazeus_util from "dazeus-util";
+import mpd from "mpd";
+import _ from "lodash";
+import sprintf from "sprintf";
 
 const STORAGE_KEY = 'muzak-users';
 
