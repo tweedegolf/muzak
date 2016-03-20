@@ -42,6 +42,47 @@ export default class IRCMPD {
 
     }
 
+    get_song(song_id){
+        if(this.pretty_results_){
+            var song = this.pretty_results_[song_id];
+            return song;
+        }
+    }
+
+    playlistadd(name, song_id){
+        var song = this.get_song(song_id);
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("playlistadd", [name, song.id]), (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve("Added " + this.pretty_song(song) + " to playlist " + name);
+            });
+        });
+    }
+
+    playlistinfo(name){
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("listplaylistinfo", [name]), (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(this.stringify_mpd_response(msg));
+            });
+        });
+    }
+
+    stringify_mpd_response(response){
+        var msg = response;
+        var s = {};
+        this._parse_keyvalue(msg, (key, value) => {
+            s[key] = value;
+        });
+        return JSON.stringify(s);
+    }
+
     status(callback) {
         this.mpdc.sendCommand("status", (err, msg) => {
             if(err) throw err;
@@ -113,7 +154,7 @@ export default class IRCMPD {
     }
 
     queue (song_id) {
-        var song = this.pretty_results_[song_id];
+        var song = this.get_song(song_id);
         return new Promise((resolve, reject) => {
             if(!this.pretty_results_ || this.pretty_results_.length <= song_id) {
                 reject("There was no such result " + song_id);
@@ -271,7 +312,13 @@ export default class IRCMPD {
         else if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
             msg = this.currentplaying();
         }
-        else if(_.indexOf(["play", "pause", "next", "stop", "crash"], subcommand) !== -1 ){
+        else if(subcommand === "playlistadd"){
+            msg = this.playlistadd(args[0], args[1]);
+        }
+        else if(subcommand === "playlistinfo"){
+            msg = this.playlistinfo(args[0]);
+        }
+        else if(_.indexOf(["play", "pause", "next", "stop"], subcommand) !== -1 ){
             msg = this.simple_commands(subcommand);
         } else {
             var handler = this.subcommand_handlers[subcommand];
