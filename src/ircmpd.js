@@ -1,9 +1,14 @@
 // vi:expandtab sw=4 ts=4
 
+import storage from 'node-persist';
 import * as dazeus from "dazeus";
 import * as dazeus_util from "dazeus-util";
 import * as mpd from "mpd";
 import * as _ from "lodash";
+
+const STORAGE_KEY = 'muzak-users';
+
+storage.initSync();
 
 export default class IRCMPD {
     constructor(dazeus_options, mpd_options){
@@ -12,6 +17,9 @@ export default class IRCMPD {
         this.pluginhost = mpd_options.pluginhost;
         this.network = mpd_options.network;
         this.channel = mpd_options.channel;
+        this.users = storage.getItem(STORAGE_KEY) || [];
+        /* user: { email: ["foo@bar.tld", "quux@bar.tld"], playlist: "foo", nick: "foo"} */
+
         var that = this;
         this.mpdc.on('ready', function() {
             // update configuration
@@ -318,6 +326,17 @@ export default class IRCMPD {
         else if(subcommand === "playlistinfo"){
             msg = this.playlistinfo(args[0]);
         }
+        else if(subcommand === "email") {
+            user = this.nick_to_user(user);
+            if(args[0]) {
+                user.email.push(args[0]);
+                msg = "Registered " + args[0] + " to you!";
+                this._commit_users();
+            } else {
+                msg = "Your registered email addresses: " + user.email.join(", ");
+            }
+            msg = new Promise((resolve) => { resolve(msg); });
+        }
         else if(_.indexOf(["play", "pause", "next", "stop"], subcommand) !== -1 ){
             msg = this.simple_commands(subcommand);
         } else {
@@ -341,6 +360,37 @@ export default class IRCMPD {
     _queue_next() {
         // we're stopped, time to queue the next song and fire it up again
         console.log("*** Time to queue the next track ***");
+    }
+
+    email_to_user(email) {
+        this.users.forEach((user) => {
+            user.email.forEach((address) => {
+                if(address === email) {
+                    return user;
+                }
+            });
+        });
+        return undefined;
+    }
+
+    nick_to_user(nick) {
+        for(var i in this.users) {
+            if(this.users[i].nick == nick) {
+                return this.users[i];
+            }
+        }
+
+        var user = {
+            nick: nick,
+            email: [],
+            playlist: undefined /* TODO, create a playlist here */
+        };
+        this.users.push(user);
+        return user;
+    }
+
+    _commit_users() {
+        storage.setItem(STORAGE_KEY, this.users);
     }
 
     static yargs() {
