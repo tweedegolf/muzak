@@ -154,10 +154,15 @@ export default class IRCMPD {
         });
 
         return new Promise((resolve, reject) => {
-            this.mpdc.sendCommand(mpd.cmd(found_command[0], []), (err, msg) => {
-                if (err) throw err;
-                resolve(found_command[1]);
-            });
+            if(found_command){
+                this.mpdc.sendCommand(mpd.cmd(found_command[0], []), (err, msg) => {
+                    if (err) throw err;
+                    resolve(found_command[1]);
+                });
+            } else {
+                var available_commands = _.map(mapping, (e) => { return e[0]; });
+                reject("Simple command " + command + " is not defined. Try any of the following: " + JSON.stringify(available_commands));
+            }
         });
     }
 
