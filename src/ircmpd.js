@@ -18,6 +18,7 @@ export default class IRCMPD {
         this.network = mpd_options.network;
         this.channel = mpd_options.channel;
         this.users = storage.getItem(STORAGE_KEY) || [];
+        this.next_email_provider = () => { return undefined; }
         /* user: { email: ["foo@bar.tld", "quux@bar.tld"], playlist: "foo", nick: "foo"} */
 
         var that = this;
@@ -118,14 +119,17 @@ export default class IRCMPD {
                         if(result) results.push(result);
                         result = {};
                     }
-                    result[key] = value;
+                    if(key) result[key] = value;
                 });
                 if(result) {
                     results.push(result);
                 }
                 this.search_results_ = results.slice(0, 10);
-                this.parse_results();
-                resolve(this.parse_results());
+                if(results.length == 0) {
+                    resolve("No results for that query!");
+                } else {
+                    resolve(this.parse_results());
+                }
             });
         });
     }
@@ -372,18 +376,34 @@ export default class IRCMPD {
     }
 
     _queue_next() {
-        // we're stopped, time to queue the next song and fire it up again
-        console.log("*** Time to queue the next track ***");
+        var user;
+        var attempts = 0;
+        var message_sent = false;
+        while(!user && attempts++ < 20) {
+            // we're stopped, time to queue the next song and fire it up again
+            var email = this.next_email_provider();
+            if(!email) {
+                if(!message_sent) {
+                    this.message("I wanted to restart the queue, but looks like there were no eligible users :(");
+                    message_sent = true;
+                }
+                continue;
+            }
+            user = this.email_to_user(email);
+            // TODO: try playing a track from his playlist, if succeeded, return!
+        }
+
+        this.message("I failed to get an eligible playlist to play a next track from.");
     }
 
     email_to_user(email) {
-        this.users.forEach((user) => {
-            user.email.forEach((address) => {
-                if(address === email) {
-                    return user;
+        for(var i in this.users) {
+            for(var j in this.users[i].email) {
+                if(this.users[i].email[j] == email) {
+                    return this.users[i];
                 }
-            });
-        });
+            }
+        }
         return undefined;
     }
 
@@ -409,6 +429,10 @@ export default class IRCMPD {
 
     _commit_users() {
         storage.setItem(STORAGE_KEY, this.users);
+    }
+
+    set_next_email_provider(provider) {
+        this.next_email_provider = provider;
     }
 
     static yargs() {
