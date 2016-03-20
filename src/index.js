@@ -16,6 +16,9 @@ var server = new HookServer(ircmpd, karma);
 
 karma.listen();
 server.listen();
+ircmpd.set_next_email_provider(() => {
+    return karma.pop();
+});
 
 function mpdOptionsFromArgv (argv) {
     var options = {};
