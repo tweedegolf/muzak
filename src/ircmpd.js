@@ -9,6 +9,8 @@ export default class IRCMPD {
         this.search_results_ = [];
         this.mpdc = mpd.connect(mpd_options);
         this.pluginhost = mpd_options.pluginhost;
+        this.network = mpd_options.network;
+        this.channel = mpd_options.channel;
         var that = this;
         this.mpdc.on('ready', function() {
             // update configuration
@@ -151,6 +153,29 @@ export default class IRCMPD {
         this.subcommand_handlers[subcommand] = callback;
     }
 
+    message(str) {
+        if(!this.network || !this.channel) {
+            console.log("Can't send message, no --network or --channel set: " + str);
+            return;
+        }
+        this._message(this.network, this.channel, str);
+    }
+
+    _message(network, channel, msg) {
+        var host = "";
+        if(typeof this.pluginhost === 'string') {
+            host = "[" + this.pluginhost + "] ";
+        }
+        var lines = msg.split("\n").filter((line) => { return line.length > 0; });
+        if(lines.length > 0){
+            for(var i = 0; i < lines.length; i += 1){
+                lines[i] = host + lines[i];
+            }
+        }
+        msg = lines.join("\n");
+        this.dazeus.message(network, channel, msg);
+    }
+
     _parse_keyvalue(msg, callback) {
         var i = 0;
         while(i < msg.length) {
@@ -204,19 +229,8 @@ export default class IRCMPD {
             }
         }
 
-        msg.then((msg) => {
-            var host = "";
-            if(typeof this.pluginhost === 'string') {
-                host = "[" + this.pluginhost + "] ";
-            }
-            var lines = msg.split("\n").filter((line) => { return line.length > 0; });
-            if(lines.length > 0){
-                for(var i = 0; i < lines.length; i += 1){
-                    lines[i] = host + lines[i];
-                }
-            }
-            msg = lines.join("\n");
-            this.dazeus.message(network, channel, msg);
+        if(msg) msg.then((msg) => {
+            this._message(network, channel, msg);
         }, console.error );
     }
 
@@ -230,6 +244,11 @@ export default class IRCMPD {
             .default("mpdport", 6600)
             .string("pluginhost")
             .describe("pluginhost", "Something to prepend to all messages")
+            .string("network")
+            .describe("network", "What network to send events to")
+            .string("channel")
+            .describe("channel", "What channel to send events to")
+            .default("channel", "#muzak")
     }
 
     static help(argv) {
