@@ -61,8 +61,8 @@ export default class IRCMPD {
     playlistadd(name, song_id){
         var song = this.get_song(song_id);
         return new Promise((resolve, reject) => {
-            _playlistadd(name, song.id).then(() => {
-                resolve("Added " + this.pretty_song(song_id) + " to playlist " + name);
+            this._playlistadd(name, song.id).then(() => {
+                resolve("Added " + this.pretty_song(song) + " to playlist " + name);
             }, reject);
         });
     }
@@ -76,6 +76,18 @@ export default class IRCMPD {
                     return;
                 }
                 resolve();
+            });
+        });
+    }
+
+    playlistclear(name) {
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("playlistclear", [name]), (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve("Playlist cleared");
             });
         });
     }
@@ -116,6 +128,18 @@ export default class IRCMPD {
     _play() {
         return new Promise((resolve, reject) => {
             this.mpdc.sendCommand("play", (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            });
+        });
+    }
+
+    _playlistmove(name, num, pos) {
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("playlistmove", [name, num, pos]), (err, msg) => {
                 if (err) {
                     reject(err);
                     return;
@@ -380,6 +404,9 @@ export default class IRCMPD {
         else if(subcommand === "playlistadd"){
             msg = this.playlistadd(mpd_user.playlist, args[0]);
         }
+        else if(subcommand === "playlistclear") {
+            msg = this.playlistclear(mpd_user.playlist);
+        }
         else if(subcommand === "playlistinfo-raw"){
             msg = this.playlistinfo(args[0]);
         }
@@ -418,12 +445,13 @@ export default class IRCMPD {
     }
 
     _queue_next() {
-        // var users = this.user_score_provider();
-        var users = [
-            ["nick@astrant.net", 0.5],
-            ["marlon@tweedegolf.com", 0.25],
-            ["github@sjorsgielen.nl", 0.25],
-        ];
+        var users_map = this.user_score_provider();
+        var users = [];
+        _.forEach(users_map, (score, mail) => {
+            users.push([mail, score]);
+        });
+        if(!users){ throw "Got no users"; }
+        if(users.length < 1){ throw "Got no users from provider"; }
         console.log(users);
         console.log(this.users);
         // TODO: Filter users that don't have queued songs
@@ -435,6 +463,7 @@ export default class IRCMPD {
                 var dice = Math.random();
                 var chance = users[i][1];
                 var m = users[i][0];
+                console.log(dice, chance, m);
                 if(dice <= chance){
                     email = users[i][0];
                     console.log("Mail ", email, " won!");
@@ -447,28 +476,39 @@ export default class IRCMPD {
             throw "No user found for email " + email;
         }
         console.log("That's user: ", user);
-        var handle_error = (err) => {
-            console.log(err);
-            if(err === "[50@0] {listplaylistinfo} No such playlist") {
-                // ignore
-            }
-            else if(!message_sent) {
-                this.message("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
-                message_sent = true;
-            }
-        };
 
-        var promise = this._playlistinfo(user.playlist);
-        promise.then((plinfo) => {
-            if(plinfo.length > 0) {
-                console.log("Playing next track from plinfo:", plinfo[0]);
+        this._move_playlist_to_playing(user.playlist).then(() => {},
+            (error) => {
+                if(!message_sent) {
+                    this.message(error);
+                    message_sent = true;
+                }
+            });
+    }
+
+    _move_playlist_to_playing(playlist_name) {
+        return new Promise((resolve, reject) => {
+            var handle_error = (err) => {
+                console.log(err);
+                reject("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
+            };
+
+            var promise = this._playlistinfo(playlist_name);
+            promise.then((plinfo) => {
+                if(plinfo.length == 0) {
+                    reject("Playlist is empty");
+                    return;
+                }
                 var next = plinfo[0];
                 this._queue(next.file).then(() => {
-                    this._play().then(() => {}, handle_error);;
-                    done = true;
+                    resolve();
+                    this._play().then(() => {
+                        // move track in playlist as well
+                        this._playlistmove(playlist_name, 0, plinfo.length - 1).then(() => {}, handle_error);
+                    }, handle_error);
                 }, handle_error);
-            }
-        }, handle_error);
+            }, handle_error);
+        });
     }
 
     email_to_user(email) {
