@@ -112,6 +112,7 @@ export default class IRCMPD {
     }
 
     queue (song_id) {
+        var song = this.pretty_results_[song_id];
         return new Promise((resolve, reject) => {
             if(!this.pretty_results_ || this.pretty_results_.length <= song_id) {
                 reject("There was no such result " + song_id);
@@ -135,12 +136,29 @@ export default class IRCMPD {
         return "Queue: " + this.queue_.join();
     }
 
+    simple_commands(command){
+        mapping = [["next", "Next!"], ["play", "Playing!"], ["pause", "Pausing!"], ["stop", "Stopping!"]];
+        mapping.forEach((stored_commands) => {
+            if(stored_commands[0] === command){
+                this.mpdc.sendCommand(mpd.cmd(stored_commands[0], []), (err, msg) => {
+                    if (err) throw err;
+                    resolve(stored_commands[1]);
+                });
+            }
+        });
+    }
+
+
+    next(){
+        simple_commands("next");
+    }
+
     play(){
-        return "Playing";
+        simple_commands("play");
     }
 
     pause(){
-        return "Pausing";
+        simple_commands("pause");
     }
 
     currentplaying(){
