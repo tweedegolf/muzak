@@ -34,10 +34,8 @@ export default class IRCMPD {
             that.mpdc.sendCommand("repeat 0", function(err, msg) {
                 if (err) throw err;
             });
-            console.log("ready");
         });
         this.mpdc.on('system', function(name) {
-          console.log("update", name);
         });
         this.mpdc.on('system-player', function() {
           that.status(function(status) {
@@ -340,7 +338,7 @@ export default class IRCMPD {
 
     message(str) {
         if(!this.network || !this.channel) {
-            console.log("Can't send message, no --network or --channel set: " + str);
+            console.error("Can't send message, no --network or --channel set: " + str);
             return;
         }
         this._message(this.network, this.channel, str);
@@ -461,8 +459,6 @@ export default class IRCMPD {
         });
         if(!users){ throw "Got no users"; }
         if(users.length < 1){ throw "Got no users from provider"; }
-        console.log(users);
-        console.log(this.users);
         // TODO: Filter users that don't have queued songs
 
         // we're stopped, time to queue the next song and fire it up again
@@ -472,10 +468,8 @@ export default class IRCMPD {
                 var dice = Math.random();
                 var chance = users[i][1];
                 var m = users[i][0];
-                console.log(dice, chance, m);
                 if(dice <= chance){
                     email = users[i][0];
-                    console.log("Mail ", email, " won!");
                     break;
                 }
             }
@@ -484,7 +478,6 @@ export default class IRCMPD {
         if(!user) {
             throw "No user found for email " + email;
         }
-        console.log("That's user: ", user);
 
         this._move_playlist_to_playing(user.playlist).then(() => {},
             (error) => {
