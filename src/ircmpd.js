@@ -9,7 +9,7 @@ export default class IRCMPD {
         var that = this;
         this.mpdc.on('ready', function() {
             // update configuration
-            that.mpdc.sendCommand(mpd.cmd("consume 1"), function(err, msg) {
+            that.mpdc.sendCommand("consume 1", function(err, msg) {
                 if (err) throw err;
             });
           console.log("ready");
