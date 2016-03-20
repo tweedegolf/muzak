@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/tweedegolf/muzak#readme",
   "dependencies": {
-    "dazeus": "^0.7.1"
+    "dazeus": "^0.7.1",
+    "dazeus-util": "^0.7.0",
+    "express": "^4.13.4"
   }
 }
