@@ -7,9 +7,9 @@ dazeus_util.help(argv);
 var options = dazeus_util.optionsFromArgv(argv);
 
 let client = dazeus.connect(options, () => {
-    client.on('PRIVMSG', (network, user, channel, message) => {
-        client.message(network, channel, message);
-    });
+    // client.on('PRIVMSG', (network, user, channel, message) => {
+    //     client.message(network, channel, message);
+    // });
 });
 
 server.listen(8080);
