@@ -61,36 +61,68 @@ export default class IRCMPD {
     playlistadd(name, song_id){
         var song = this.get_song(song_id);
         return new Promise((resolve, reject) => {
+            _playlistadd(name, song.id).then(() => {
+                resolve("Added " + this.pretty_song(song_id) + " to playlist " + name);
+            }, reject);
+        });
+    }
+
+    _playlistadd(name, song_id) {
+        return new Promise((resolve, reject) => {
             if(!name){ throw "There's no playlist for you"; }
-            this.mpdc.sendCommand(mpd.cmd("playlistadd", [name, song.id]), (err, msg) => {
+            this.mpdc.sendCommand(mpd.cmd("playlistadd", [name, song_id]), (err, msg) => {
                 if (err) {
                     reject(err);
                     return;
                 }
-                resolve("Added " + this.pretty_song(song) + " to playlist " + name);
+                resolve();
             });
         });
     }
 
     playlistinfo(name){
         return new Promise((resolve, reject) => {
+            var p = this._playlistinfo(name);
+            p.then((plinfo) => {
+                resolve(JSON.stringify(plinfo));
+            }, reject);
+        });
+    }
+
+    _playlistinfo(name) {
+        return new Promise((resolve, reject) => {
             this.mpdc.sendCommand(mpd.cmd("listplaylistinfo", [name]), (err, msg) => {
                 if (err) {
                     reject(err);
                     return;
                 }
-                resolve(this.stringify_mpd_response(msg));
+                var result;
+                var results = [];
+                this._parse_keyvalue(msg, (key, value) => {
+                    if(key == "file") {
+                        if(result) results.push(result);
+                        result = {};
+                    }
+                    if(key) result[key] = value;
+                });
+                if(result) {
+                    results.push(result);
+                }
+                resolve(results);
             });
         });
     }
 
-    stringify_mpd_response(response){
-        var msg = response;
-        var s = {};
-        this._parse_keyvalue(msg, (key, value) => {
-            s[key] = value;
+    _play() {
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand("play", (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            });
         });
-        return JSON.stringify(s);
     }
 
     status(callback) {
@@ -169,15 +201,20 @@ export default class IRCMPD {
     queue (song_id) {
         var song = this.get_song(song_id);
         return new Promise((resolve, reject) => {
-            if(!this.pretty_results_ || this.pretty_results_.length <= song_id) {
-                reject("There was no such result " + song_id);
-                return;
-            }
-            var song = this.pretty_results_[song_id];
-            console.log(song);
-            this.mpdc.sendCommand(mpd.cmd("add", [song.id]), (err, msg) => {
-                if (err) throw err;
+            this._queue(song.id).then(() => {
                 resolve("Queued " + this.pretty_song(song));
+            }, reject);
+        });
+    }
+
+    _queue (song_id) {
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("add", [song_id]), (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
             });
         });
     }
@@ -379,7 +416,8 @@ export default class IRCMPD {
         var user;
         var attempts = 0;
         var message_sent = false;
-        while(!user && attempts++ < 20) {
+        var done = false;
+        while(!user && !done && attempts++ < 20) {
             // we're stopped, time to queue the next song and fire it up again
             var email = this.next_email_provider();
             if(!email) {
@@ -389,11 +427,37 @@ export default class IRCMPD {
                 }
                 continue;
             }
+            console.log("Trying to play to email: ", email);
             user = this.email_to_user(email);
-            // TODO: try playing a track from his playlist, if succeeded, return!
-        }
+            console.log("Trying to play to user: ", user);
+            if(user && user.playlist) {
+                var handle_error = (err) => {
+                    console.log(err);
+                    if(err === "[50@0] {listplaylistinfo} No such playlist") {
+                        // ignore
+                    }
+                    else if(!message_sent) {
+                        this.message("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
+                        message_sent = true;
+                    }
+                };
 
-        this.message("I failed to get an eligible playlist to play a next track from.");
+                var promise = this._playlistinfo(user.playlist);
+                console.log("Trying to retrieve playlistinfo");
+                promise.then((plinfo) => {
+                    console.log("Got plinfo: ", plinfo);
+                    if(plinfo.length > 0) {
+                        console.log("Playing next track from plinfo:");
+                        var next = plinfo[0];
+                        console.log(plinfo);
+                        this._queue(next.file).then(() => {
+                            this._play().then(() => {}, handle_error);;
+                            done = true;
+                        }, handle_error);
+                    }
+                }, handle_error);
+            }
+        }
     }
 
     email_to_user(email) {
