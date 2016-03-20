@@ -41,6 +41,7 @@ export default class IRCMPD {
                     results.push(result);
                 }
                 this.search_results_ = results.slice(0, 10);
+                this.parse_results();
                 resolve(this.parse_results());
             });
         });
@@ -60,10 +61,16 @@ export default class IRCMPD {
         });
 
         var msg = "";
+        this.pretty_results_ = pretty_results;
         pretty_results.forEach((e) => {
-            msg += e.listed_id + ": " + e.artist + " - " + e.title + "\n";
+            msg += e.listed_id + ": " + this.pretty_song(e) + "\n";
         });
         return msg;
+    }
+
+    pretty_song(pretty_result_song){
+        var e = pretty_result_song;
+        return e.artist + " - " + e.title;
     }
 
     last_search(){
@@ -73,8 +80,14 @@ export default class IRCMPD {
     }
 
     queue (song_id) {
-        this.queue_.push(song_id);
-        return "Queued " + song_id;
+        var song = this.pretty_results_[song_id];
+        console.log(song);
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("add", [song.id]), (err, msg) => {
+                if (err) throw err;
+                resolve("Queued " + this.pretty_song(song));
+            });
+        });
     }
 
     queue_clear() {
