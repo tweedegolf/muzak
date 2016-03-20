@@ -19,5 +19,9 @@ function mpdOptionsFromArgv (argv) {
     if (typeof argv.pluginhost === 'string') {
         options.pluginhost = argv.pluginhost;
     }
+    if (typeof argv.network == 'string') {
+        options.network = argv.network;
+    }
+    options.channel = argv.channel;
     return options;
 }
