@@ -3,13 +3,26 @@
 import * as mpd from "mpd";
 
 export default class IRCMPD {
-    constructor(){
+    constructor(options){
         this.search_results_ = [];
+        this.mpdc = mpd.connect(options);
+        this.mpdc.on('ready', function() {
+          console.log("ready");
+        });
+        this.mpdc.on('system', function(name) {
+          console.log("update", name);
+        });
+        this.mpdc.on('system-player', function() {
+          this.mpdc.sendCommand(mpd.cmd("status", []), function(err, msg) {
+            if (err) throw err;
+            console.log(msg);
+          });
+        });
     }
 
-    search (mpdc, str) {
+    search (str) {
         return new Promise((resolve, reject) => {
-            mpdc.sendCommand(mpd.cmd("search", ["any", str]), (err, msg) => {
+            this.mpdc.sendCommand(mpd.cmd("search", ["any", str]), (err, msg) => {
                 if (err) throw err;
                 var result;
                 var results = [];
