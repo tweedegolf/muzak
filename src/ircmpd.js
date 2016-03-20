@@ -23,31 +23,20 @@ export default class IRCMPD {
     search (str) {
         return new Promise((resolve, reject) => {
             this.mpdc.sendCommand(mpd.cmd("search", ["any", str]), (err, msg) => {
-                if (err) throw err;
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
                 var result;
                 var results = [];
-                var i = 0;
-                while(i < msg.length) {
-                    var linepos = msg.indexOf("\n", i);
-                    if(linepos == -1) linepos = msg.length;
-                    var line = msg.substr(i, linepos - i);
-                    i = linepos + 1;
-
-                    if(line == '') {
-                        continue;
-                    }
-                    var pos = line.indexOf(":");
-                    if(pos == -1) {
-                        throw new Error("Misunderstood line from mpd search: " + line);
-                    }
-                    var key = line.substr(0, pos);
-                    var value = line.substr(pos + 2);
+                this._parse_keyvalue(msg, (key, value) => {
                     if(key == "file") {
                         if(result) results.push(result);
                         result = {};
                     }
                     result[key] = value;
-                };
+                });
                 if(result) {
                     results.push(result);
                 }
@@ -106,7 +95,40 @@ export default class IRCMPD {
     }
 
     currentplaying(){
-        return "Now playing Floep";
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand('currentsong', (err, msg) => {
+                if(err) {
+                    reject(err);
+                    return;
+                }
+                var s = {};
+                this._parse_keyvalue(msg, (key, value) => {
+                    s[key] = value;
+                });
+                resolve("Now playing: " + s.Artist + " - " + s.Title);
+            });
+        });
+    }
+
+    _parse_keyvalue(msg, callback) {
+        var i = 0;
+        while(i < msg.length) {
+            var linepos = msg.indexOf("\n", i);
+            if(linepos == -1) linepos = msg.length;
+            var line = msg.substr(i, linepos - i);
+            i = linepos + 1;
+
+            if(line == '') {
+                continue;
+            }
+            var pos = line.indexOf(":");
+            if(pos == -1) {
+                throw new Error("Incorrect line from mpd: " + line);
+            }
+            var key = line.substr(0, pos);
+            var value = line.substr(pos + 2);
+            callback(key, value);
+        };
     }
 };
 

@@ -32,6 +32,9 @@ let dazeus_client = dazeus.connect(dazeus_options, () => {
         if(subcommand === "list"){
             msg = ircmpd.list();
         }
+        if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
+            msg = ircmpd.currentplaying();
+        }
 
         msg.then((msg) => {
             dazeus_client.message(network, channel, msg);
