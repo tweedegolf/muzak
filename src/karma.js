@@ -3,16 +3,40 @@
 import storage from 'node-persist';
 import _ from 'lodash';
 import moment from 'moment';
+import AsciiTable from 'ascii-table';
 
 const STORAGE_KEY = 'muzak-karma';
 const DECAY_FACTOR = 0.0002;
 
 storage.initSync();
 
-class Karma {
+export default class Karma {
 
-    constructor() {
+    constructor(ircmpd) {
+        this.ircmpd = ircmpd;
         this.score = storage.getItem(STORAGE_KEY) || {};
+
+        ircmpd.on('add-karma', (command, [email, points]) => {
+            return new Promise((resolve) => {
+                this.add(email, points, 'manual added via irc');
+                resolve();
+            });
+        });
+
+        ircmpd.on('karma-table', (command, [email, points]) => {
+            return new Promise((resolve) => {
+                var table = new AsciiTable();
+                _.forEach(this.get_table(), ([score, email]) => {
+                    table.addRow(email, AsciiTable.align(
+                         AsciiTable.RIGHT,
+                        score.toFixed(4).toString(),
+                        10
+                    ));
+                });
+
+                resolve(table.toString());
+            });
+        });
     }
 
     add(email, points, comment) {
@@ -30,7 +54,7 @@ class Karma {
 
         storage.setItem(STORAGE_KEY, this.score);
 
-        console.log(this.get_table());
+        this.ircmpd.message(['KARMA_UPDATE:', email, comment, points].join(' '));
     }
 
     delete_old() {
@@ -48,7 +72,7 @@ class Karma {
         var score = 0;
 
         _.forEach(events, function (event) {
-            score += event.score * DECAY_FACTOR * (time - event.time);
+            score += event.points - DECAY_FACTOR * (time - event.time);
         });
 
         return score;
@@ -72,5 +96,3 @@ class Karma {
         return table[0][1];
     }
 }
-
-export default new Karma();

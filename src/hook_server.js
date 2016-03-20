@@ -4,7 +4,6 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import moment from 'moment';
 import _ from 'lodash';
-import karma from './karma';
 
 var app = express();
 
@@ -34,8 +33,7 @@ app.post('/commit', (req, res) => {
     }
 
     _.forEach(data.commits, (commit) => {
-        console.log('commit by:', commit.author.email);
-        karma.add(commit.author.email, 2);
+        app.karma.add(commit.author.email, 2, 'commit');
     });
 
     res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
@@ -45,11 +43,9 @@ app.post('/issue/:key', function (req, res) {
     var data = req.body;
 
     if (data.webhookEvent === ISSUE_CREATED) {
-        console.log('issue created by:', data.user.emailAddress);
-        karma.add(commit.author.email, 1);
-
+        app.karma.add(commit.author.email, 1, 'issue created');
     } else if (data.webhookEvent === ISSUE_UPDATED)  {
-        var action = 'changed';
+        var action = 'updated';
         _.forEach(data.changelog.items, (item) => {
             if (item.field === 'status') {
                 action = item.toString;
@@ -58,20 +54,18 @@ app.post('/issue/:key', function (req, res) {
 
         switch (action) {
             case 'closed':
-                karma.add(data.user.emailAddress, 2);
+                app.karma.add(data.user.emailAddress, 2, 'issue closed');
                 break;
             case 'resolved':
-                karma.add(data.user.emailAddress, 2);
+                app.karma.add(data.user.emailAddress, 2, 'issue resolved');
                 break;
-            case 'changed':
-                karma.add(data.user.emailAddress, 1);
+            case 'updated':
+                app.karma.add(data.user.emailAddress, 1, 'issue updated');
                 break;
             default:
                 // no points for other actions
                 break;
         }
-
-        console.log('issue ' + action + ' by:', data.user.emailAddress);
     }
 
     res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
