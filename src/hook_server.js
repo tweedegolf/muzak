@@ -1,3 +1,5 @@
+// vi:expandtab sw=4 ts=4
+
 import express from 'express';
 
 var app = express();
