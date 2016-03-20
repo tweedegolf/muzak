@@ -196,7 +196,7 @@ export default class IRCMPD {
         } else {
             var handler = this.subcommand_handlers[subcommand];
             if(handler) {
-                msg = handler(command, args);
+                msg = handler(subcommand, args);
             } else {
                 msg = new Promise((resolve) => {
                     resolve("Unknown command: " + subcommand);
