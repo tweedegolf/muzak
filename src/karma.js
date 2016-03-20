@@ -74,8 +74,8 @@ export default class Karma {
     delete_old() {
         var start_of_day = moment().startOf('day').format('X');
 
-        _.forEach(this.score, function (events, email) {
-            this.score[email] = _.filter(events, function (event) {
+        _.forEach(this.score, (events, email) => {
+            this.score[email] = _.filter(events, (event) => {
                 return event.time > start_of_day;
             })
         });
