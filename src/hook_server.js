@@ -4,6 +4,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import moment from 'moment';
 import _ from 'lodash';
+import config from '../config';
 
 // initialize express application
 var app = express();
@@ -43,7 +44,7 @@ app.post('/commit', (req, res) => {
     }
 
     _.forEach(data.commits, (commit) => {
-        app.karma.add(commit.author.email, 2, 'commit');
+        app.karma.add(commit.author.email, config.karma.points.commit, 'commit');
     });
 
     res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
@@ -61,6 +62,7 @@ app.post('/issue/:key', function (req, res) {
         app.karma.add(commit.author.email, 1, 'issue created');
     } else if (data.webhookEvent === ISSUE_UPDATED)  {
         var action = 'updated';
+
         _.forEach(data.changelog.items, (item) => {
             if (item.field === 'status') {
                 action = item.toString;
@@ -69,13 +71,13 @@ app.post('/issue/:key', function (req, res) {
 
         switch (action) {
             case 'closed':
-                app.karma.add(data.user.emailAddress, 2, 'issue closed');
+                app.karma.add(data.user.emailAddress, config.karma.points.issue_close, 'issue closed');
                 break;
             case 'resolved':
-                app.karma.add(data.user.emailAddress, 2, 'issue resolved');
+                app.karma.add(data.user.emailAddress, config.karma.points.issue_resolve, 'issue resolved');
                 break;
             case 'updated':
-                app.karma.add(data.user.emailAddress, 1, 'issue updated');
+                app.karma.add(data.user.emailAddress, config.karma.points.issue_update, 'issue updated');
                 break;
             default:
                 // no points for other actions

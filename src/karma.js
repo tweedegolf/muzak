@@ -4,9 +4,7 @@ import storage from 'node-persist';
 import _ from 'lodash';
 import moment from 'moment';
 import AsciiTable from 'ascii-table';
-
-const STORAGE_KEY = 'muzak-karma';
-const DECAY_FACTOR = 0.0002;
+import config from '../config';
 
 storage.initSync();
 
@@ -21,7 +19,7 @@ export default class Karma {
      */
     constructor(ircmpd) {
         this.ircmpd = ircmpd;
-        this.score = storage.getItem(STORAGE_KEY) || {};
+        this.score = storage.getItem(config.karma.storage_key) || {};
 
         // remove old events (since the start of the day)
         this.delete_old();
@@ -91,7 +89,7 @@ export default class Karma {
             comment
         });
 
-        storage.setItem(STORAGE_KEY, this.score);
+        storage.setItem(config.karma.storage_key, this.score);
 
         this.ircmpd.message(['KARMA_UPDATE:', email, comment, points].join(' '));
     }
@@ -120,7 +118,7 @@ export default class Karma {
         var score = 0;
 
         _.forEach(events, function (event) {
-            score += event.points - DECAY_FACTOR * (time - event.time);
+            score += event.points - config.karma.decay * (time - event.time);
         });
 
         return score;
