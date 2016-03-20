@@ -445,12 +445,13 @@ export default class IRCMPD {
     }
 
     _queue_next() {
-        // var users = this.user_score_provider();
-        var users = [
-            ["nick@astrant.net", 0.5],
-            ["marlon@tweedegolf.com", 0.25],
-            ["github@sjorsgielen.nl", 0.25],
-        ];
+        var users_map = this.user_score_provider();
+        var users = [];
+        _.forEach(users_map, (score, mail) => {
+            users.push([mail, score]);
+        });
+        if(!users){ throw "Got no users"; }
+        if(users.length < 1){ throw "Got no users from provider"; }
         console.log(users);
         console.log(this.users);
         // TODO: Filter users that don't have queued songs
@@ -462,6 +463,7 @@ export default class IRCMPD {
                 var dice = Math.random();
                 var chance = users[i][1];
                 var m = users[i][0];
+                console.log(dice, chance, m);
                 if(dice <= chance){
                     email = users[i][0];
                     console.log("Mail ", email, " won!");
