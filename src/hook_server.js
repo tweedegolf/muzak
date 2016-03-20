@@ -5,20 +5,25 @@ import bodyParser from 'body-parser';
 import moment from 'moment';
 import _ from 'lodash';
 
+// initialize express application
 var app = express();
 
 const ISSUE_CREATED = 'jira:issue_created';
 const ISSUE_UPDATED = 'jira:issue_updated';
 
- // for parsing application/json
+// for parsing application/json
 app.use(bodyParser.json());
 
 // for parsing application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
+/**
+ * Landing page
+ */
 app.get('/', (req, res) => {
     res.send('Welcome to MUZAK, please use IRC to interact.');
 });
+
 
 app.post('/commit', (req, res) => {
     var data = {};
