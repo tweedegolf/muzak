@@ -23,6 +23,14 @@ export default class Karma {
             });
         });
 
+        ircmpd.on('pop', () => {
+            return new Promise((resolve) => {
+                var email = this.pop();
+                this.add(email, -1, 'manual pop via irc');
+                resolve();
+            });
+        });
+
         ircmpd.on('karma-table', (command, [email, points]) => {
             return new Promise((resolve) => {
                 var table = new AsciiTable();
