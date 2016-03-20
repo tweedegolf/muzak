@@ -14,6 +14,9 @@ var ircmpd = new IRCMPD(dazeus_options, mpd_options);
 var karma = new Karma(ircmpd);
 var server = new HookServer(ircmpd, karma);
 
+karma.listen();
+server.listen();
+
 function mpdOptionsFromArgv (argv) {
     var options = {};
     options.port = argv.mpdport;

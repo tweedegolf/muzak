@@ -34,14 +34,13 @@ export default class HookServer {
             extended: true
         }));
 
-        this.listen();
+        this.register_hooks();
     }
 
     /**
-     * Start the server and listen on the webhook endpoints
+     * Register routes as webhook endpoints
      */
-    listen() {
-
+    register_hooks() {
         /**
          * Landing page
          */
@@ -111,6 +110,12 @@ export default class HookServer {
 
             res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
         });
+    }
+
+    /**
+     * Start the server and listen on the webhook endpoints
+     */
+    listen() {
 
         // fire up the server
         this.app.listen(config.server.port);

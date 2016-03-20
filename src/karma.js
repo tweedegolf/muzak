@@ -23,7 +23,6 @@ export default class Karma {
 
         // remove old events (since the start of the day)
         this.delete_old();
-        this.listen();
     }
 
     /**
