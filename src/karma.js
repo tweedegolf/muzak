@@ -15,6 +15,7 @@ export default class Karma {
     constructor(ircmpd) {
         this.ircmpd = ircmpd;
         this.score = storage.getItem(STORAGE_KEY) || {};
+        this.delete_old();
 
         ircmpd.on('add-karma', (command, [email, points]) => {
             return new Promise((resolve) => {
@@ -26,8 +27,13 @@ export default class Karma {
         ircmpd.on('pop', () => {
             return new Promise((resolve) => {
                 var email = this.pop();
-                this.add(email, -1, 'manual pop via irc');
-                resolve();
+
+                if (email) {
+                    this.add(email, -1, 'manual pop via irc');
+                    resolve();
+                } else {
+                    resolve('no users present');
+                }
             });
         });
 
@@ -98,7 +104,12 @@ export default class Karma {
     }
 
     pop() {
+        this.delete_old();
         var table = this.get_table();
+
+        if (table.length === 0) {
+            return null;
+        }
 
         // the first row contains an array [email, score]
         return table[0][1];
