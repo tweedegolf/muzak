@@ -23,17 +23,22 @@ let dazeus_client = dazeus.connect(dazeus_options, () => {
                 msg = ircmpd.queue(args.slice(1));
             }
         }
-        if(subcommand === "search"){
+        else if(subcommand === "search"){
             msg = ircmpd.search(args.slice(1));
         }
-        if(subcommand === "lastsearch"){
+        else if(subcommand === "lastsearch"){
             msg = ircmpd.last_search();
         }
-        if(subcommand === "list"){
+        else if(subcommand === "list"){
             msg = ircmpd.list();
         }
-        if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
+        else if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
             msg = ircmpd.currentplaying();
+        }
+        else {
+            msg = new Promise((resolve) => {
+                resolve("Unknown command: " + subcommand);
+            });
         }
 
         msg.then((msg) => {
