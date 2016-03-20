@@ -6,14 +6,19 @@ export default class IRCMPD {
     constructor(options){
         this.search_results_ = [];
         this.mpdc = mpd.connect(options);
+        var that = this;
         this.mpdc.on('ready', function() {
+            // update configuration
+            that.mpdc.sendCommand(mpd.cmd("consume 1"), function(err, msg) {
+                if (err) throw err;
+            });
           console.log("ready");
         });
         this.mpdc.on('system', function(name) {
           console.log("update", name);
         });
         this.mpdc.on('system-player', function() {
-          this.mpdc.sendCommand(mpd.cmd("status", []), function(err, msg) {
+          that.mpdc.sendCommand(mpd.cmd("status", []), function(err, msg) {
             if (err) throw err;
             console.log(msg);
           });
