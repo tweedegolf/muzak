@@ -38,7 +38,7 @@ export default class IRCMPD {
                 if(result) {
                     results.push(result);
                 }
-                this.search_results_ = results.slice(1, 10);
+                this.search_results_ = results.slice(0, 10);
                 resolve(this.parse_results());
             });
         });
