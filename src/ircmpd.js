@@ -507,12 +507,12 @@ export default class IRCMPD {
                     reject("Playlist is empty");
                     return;
                 }
-                var next = plinfo[0];
+                var next = plinfo[plinfo.length - 1];
                 this._queue(next.file).then(() => {
                     resolve();
                     this._play().then(() => {
                         // move track in playlist as well
-                        this._playlistmove(playlist_name, 0, plinfo.length - 1).then(() => {}, handle_error);
+                        this._playlistmove(playlist_name, plinfo.length - 1, 0).then(() => {}, handle_error);
                     }, handle_error);
                 }, handle_error);
             }, handle_error);
