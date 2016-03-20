@@ -52,15 +52,18 @@ export default class HookServer {
          * Landing page
          */
         this.app.get('/', (req, res) => {
-            this.ircmpd.currentplaying().then((song_name) => {
+            this.ircmpd._currentplaying().then((song) => {
 
-                if (song_name.indexOf('undefined') !== -1) {
-                    song_name = 'nothing';
+                if (!song) {
+                    song = {
+                        'Title': 'nothing',
+                        'Artist': ''
+                    };
                 }
 
                 res.render('index.html', {
                     table: this.karma.get_factors(),
-                    song_name: song_name
+                    song: song
                 });
             });
         });
