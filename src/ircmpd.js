@@ -61,8 +61,8 @@ export default class IRCMPD {
     playlistadd(name, song_id){
         var song = this.get_song(song_id);
         return new Promise((resolve, reject) => {
-            _playlistadd(name, song.id).then(() => {
-                resolve("Added " + this.pretty_song(song_id) + " to playlist " + name);
+            this._playlistadd(name, song.id).then(() => {
+                resolve("Added " + this.pretty_song(song) + " to playlist " + name);
             }, reject);
         });
     }
