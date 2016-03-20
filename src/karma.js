@@ -5,6 +5,7 @@ import _ from 'lodash';
 import moment from 'moment';
 import AsciiTable from 'ascii-table';
 import config from '../config';
+import {sprintf} from 'sprintf';
 
 storage.initSync();
 
@@ -32,7 +33,7 @@ export default class Karma {
 
         this.ircmpd.on('add-karma', (command, [email, points]) => {
             return new Promise((resolve) => {
-                this.add(email, points, 'manual added via irc');
+                this.add(email, parseInt(points, 10), 'manual added via irc');
 
                 resolve();
             });
@@ -91,7 +92,13 @@ export default class Karma {
 
         storage.setItem(config.karma.storage_key, this.score);
 
-        this.ircmpd.message(['KARMA_UPDATE:', email, comment, points].join(' '));
+        this.ircmpd.message(sprintf(
+            'KARMA: %s received %d points "%s", current karma: %.4f',
+            email,
+            points,
+            comment,
+            this.get_karma(this.score[email])
+        ));
     }
 
     /**

@@ -10,12 +10,16 @@ var github_commit = {
        {
           "author":{
              "email":"github@sjorsgielen.nl",
-          }
+             "name":"Sjors"
+          },
+          "message":"This is me testing the client"
        },
        {
           "author":{
-             "email":"marlon@tweedegolf.com"
-          }
+             "email":"marlon@tweedegolf.com",
+             "name":"Marlon"
+          },
+          "message":"This is me testing the client"
        }
     ],
     "repository":{
@@ -36,14 +40,19 @@ var gitlab_commit = {
     {
       "id": "b6568db1bc1dcd7f8b4d5a946b0b91f9dacd7327",
       "author": {
-        "email": "marlon@tweedegolf.com"
-      }
+        "email": "marlon@tweedegolf.com",
+         "name":"Marlon"
+      },
+      "message":"This is me testing the client"
+
     },
     {
       "id": "da1560886d4f094c3e6c9ef40349f7d38b5d27d7",
       "author": {
-        "email": "nick@astrant.net"
-      }
+        "email": "nick@astrant.net",
+        "name":"Nick"
+      },
+      "message":"This is me testing the client"
     }
   ]
 };
@@ -52,11 +61,12 @@ var jira_hook =  {
   "issue": {
     "key":"JRA-20002",
     "fields":{
-      "summary":"Implemented Musac",
+      "summary":"Implemented Musac"
     }
   },
   "user": {
     "emailAddress":"github@sjorsgielen.nl",
+    "name":"Sjors"
   },
   "changelog": {
     "items": [

@@ -1,7 +1,7 @@
 
 export default {
     "karma": {
-        "decay": 0.0002,
+        "decay": 0.005,
         "storage_key": "muzak-karma",
         "points": {
             "commit": 2,

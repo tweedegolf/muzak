@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import moment from 'moment';
 import _ from 'lodash';
 import config from '../config';
+import {sprintf} from 'sprintf';
 
 const ISSUE_CREATED = 'jira:issue_created';
 const ISSUE_UPDATED = 'jira:issue_updated';
@@ -67,10 +68,16 @@ export default class HookServer {
             }
 
             _.forEach(data.commits, (commit) => {
+                this.ircmpd.message(sprintf(
+                    'Commit by %s in project %s: %s',
+                    commit.author.name,
+                    data.repository.name,
+                    commit.message
+                ));
                 this.karma.add(commit.author.email, config.karma.points.commit, 'commit');
             });
 
-            res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
+            res.send('success');
         });
 
         /**
@@ -83,6 +90,11 @@ export default class HookServer {
 
             if (data.webhookEvent === ISSUE_CREATED) {
                 this.karma.add(commit.author.email, 1, 'issue created');
+                this.ircmpd.message(sprintf(
+                    'Issue %s created by %s',
+                    data.issue.name,
+                    data.user.name
+                ));
             } else if (data.webhookEvent === ISSUE_UPDATED)  {
                 var action = 'updated';
 
@@ -91,6 +103,13 @@ export default class HookServer {
                         action = item.toString;
                     }
                 });
+
+                this.ircmpd.message(sprintf(
+                    'Issue %s %s by %s',
+                    data.issue.key,
+                    action,
+                    data.user.name
+                ));
 
                 switch (action) {
                     case 'closed':
@@ -108,7 +127,7 @@ export default class HookServer {
                 }
             }
 
-            res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
+            res.send('success');
         });
     }
 
