@@ -80,6 +80,18 @@ export default class IRCMPD {
         });
     }
 
+    playlistclear(name) {
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("playlistclear", [name]), (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve("Playlist cleared");
+            });
+        });
+    }
+
     playlistinfo(name){
         return new Promise((resolve, reject) => {
             var p = this._playlistinfo(name);
@@ -391,6 +403,9 @@ export default class IRCMPD {
         }
         else if(subcommand === "playlistadd"){
             msg = this.playlistadd(mpd_user.playlist, args[0]);
+        }
+        else if(subcommand === "playlistclear") {
+            msg = this.playlistclear(mpd_user.playlist);
         }
         else if(subcommand === "playlistinfo-raw"){
             msg = this.playlistinfo(args[0]);
