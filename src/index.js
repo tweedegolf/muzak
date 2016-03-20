@@ -19,7 +19,7 @@ mpd_client.on('system', function(name) {
   console.log("update", name);
 });
 mpd_client.on('system-player', function() {
-  mpd_client.sendCommand(cmd("status", []), function(err, msg) {
+  mpd_client.sendCommand(mpd.cmd("status", []), function(err, msg) {
     if (err) throw err;
     console.log(msg);
   });
@@ -29,7 +29,6 @@ let dazeus_client = dazeus.connect(dazeus_options, () => {
     dazeus_client.onCommand("mpd", function (network, user, channel, command, line, ... args) {
         var msg = "";
         var subcommand = args[0];
-        console.log(args);
         if(subcommand === "queue"){
             var ssubcommand = args[1];
             if(ssubcommand === "clear"){
