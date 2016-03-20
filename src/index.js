@@ -19,11 +19,11 @@ let client = dazeus.connect(options, () => {
 			if(ssubcommand === "clear"){
 				msg = ircmpd.queue_clear();
 			} else {
-				msg = ircmpd.queue(args);
+				msg = ircmpd.queue(args.slice(1));
 			}
 		}
 		if(subcommand === "search"){
-			msg = ircmpd.search(args);
+			msg = ircmpd.search(args.slice(1));
 		}
 		if(subcommand === "list"){
 			msg = ircmpd.list();
