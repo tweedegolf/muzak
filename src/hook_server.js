@@ -53,6 +53,11 @@ export default class HookServer {
          */
         this.app.get('/', (req, res) => {
             this.ircmpd.currentplaying().then((song_name) => {
+
+                if (song_name.indexOf('undefined') !== -1) {
+                    song_name = 'nothing';
+                }
+
                 res.render('index.html', {
                     table: this.karma.get_factors(),
                     song_name: song_name
