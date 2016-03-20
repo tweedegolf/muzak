@@ -4,10 +4,9 @@ import * as dazeus_util from "dazeus-util";
 import server from './hook_server';
 import IRCMPD from "./ircmpd"
 
-let argv = dazeus_util.yargs().argv;
-dazeus_util.help(argv);
+let argv = IRCMPD.yargs().argv;
+IRCMPD.help(argv);
 
-var custom_options = customOptionsFromArgv(argv);
 var mpd_options = mpdOptionsFromArgv(argv);
 var ircmpd = new IRCMPD(mpd_options);
 
@@ -38,7 +37,11 @@ let dazeus_client = dazeus.connect(dazeus_options, () => {
         }
 
         msg.then((msg) => {
-            dazeus_client.message(network, channel, "<" + custom_options.pluginhost + ">: " + msg);
+            var host = "";
+            if(typeof argv.pluginhost === 'string') {
+                host = "[" + argv.pluginhost + "] ";
+            }
+            dazeus_client.message(network, channel, host + msg);
         }, console.error );
     });
 });
@@ -56,16 +59,6 @@ function mpdOptionsFromArgv (argv) {
         options.host = argv.mpd;
     } else {
         options.host = "127.0.0.1";
-    }
-    return options;
-}
-
-function customOptionsFromArgv (argv) {
-    var options = {};
-    if(typeof argv.pluginhost === 'string') {
-        options.pluginhost = argv.pluginhost;
-    } else {
-        options.pluginhost = "<loser>";
     }
     return options;
 }

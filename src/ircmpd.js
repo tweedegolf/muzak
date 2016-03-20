@@ -1,6 +1,7 @@
 // vi:expandtab sw=4 ts=4
 
 import * as mpd from "mpd";
+import * as dazeus_util from "dazeus-util";
 
 export default class IRCMPD {
     constructor(options){
@@ -147,6 +148,22 @@ export default class IRCMPD {
             var value = line.substr(pos + 2);
             callback(key, value);
         };
+    }
+
+    static yargs() {
+        return dazeus_util.yargs()
+            .string("mpd")
+            .describe("mpd", "Hostname of the MPD daemon")
+            .default("mpd", "127.0.0.1")
+            .string("mpdport")
+            .describe("mpdport", "Port of the MPD daemon")
+            .default("mpdport", 6600)
+            .string("pluginhost")
+            .describe("pluginhost", "Something to prepend to all messages")
+    }
+
+    static help(argv) {
+        dazeus_util.help(argv);
     }
 };
 
