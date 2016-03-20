@@ -253,15 +253,6 @@ export default class IRCMPD {
         });
     }
 
-    queue_clear() {
-        this.queue_ = [];
-        return "Queue cleared";
-    }
-
-    list (){
-        return "Queue: " + this.queue_.join();
-    }
-
     simple_commands(command){
         var mapping = [
             ["next", "Next!"],
@@ -383,13 +374,9 @@ export default class IRCMPD {
         }
 
         var msg;
-        if(subcommand === "queue"){
+        if(subcommand === "rawqueue"){
             var ssubcommand = args[0];
-            if(ssubcommand === "clear"){
-                msg = this.queue_clear();
-            } else {
-                msg = this.queue(args);
-            }
+            msg = this.queue(args);
         }
         else if(subcommand === "search"){
             msg = this.search(args);
@@ -406,7 +393,7 @@ export default class IRCMPD {
         else if(subcommand === "playlistadd-raw"){
             msg = this.playlistadd(args[0], args[1]);
         }
-        else if(subcommand === "playlistadd"){
+        else if(subcommand === "playlistadd" || subcommand == "queue"){
             msg = this.playlistadd(mpd_user.playlist, args[0]);
         }
         else if(subcommand === "playlistclear") {
