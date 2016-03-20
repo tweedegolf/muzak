@@ -39,19 +39,6 @@ export default class Karma {
             });
         });
 
-        this.ircmpd.on('pop', () => {
-            return new Promise((resolve) => {
-                var email = this.pop();
-
-                if (email) {
-                    this.add(email, -1, 'manual pop via irc');
-                    resolve();
-                } else {
-                    resolve('no users present');
-                }
-            });
-        });
-
         this.ircmpd.on('karma-table', () => {
             return new Promise((resolve) => {
                 var table = new AsciiTable();
@@ -60,6 +47,22 @@ export default class Karma {
                     table.addRow(email, AsciiTable.align(
                         AsciiTable.RIGHT,
                         score.toFixed(4).toString(),
+                        10
+                    ));
+                });
+
+                resolve(table.toString());
+            });
+        });
+
+        this.ircmpd.on('karma-factors', () => {
+            return new Promise((resolve) => {
+                var table = new AsciiTable();
+
+                _.forEach(this.get_factors(), (factor, email) => {
+                    table.addRow(email, AsciiTable.align(
+                        AsciiTable.RIGHT,
+                        factor.toFixed(4).toString(),
                         10
                     ));
                 });
@@ -145,20 +148,28 @@ export default class Karma {
     }
 
     /**
-     * Retrieve the email address of karma-king
-     * This will decrease the karma of the returned user
+     * Retrieve the karma factors of all users
      *
-     * @returns string|null
+     * @returns {{}}
      */
-    pop() {
-        this.delete_old();
+    get_factors() {
         var table = this.get_table();
+        var factors = {};
 
-        if (table.length === 0) {
-            return null;
+        // retrieve the max karma
+        var score_sum = _.sumBy(table, function ([score, email]) {
+            factors[email] = 0;
+            return score;
+        });
+
+        if (score_sum === 0) {
+            return factors;
         }
 
-        // the first row contains an array [email, score]
-        return table[0][1];
+        _.forEach(table, function ([score, email]) {
+            factors[email] = score / score_sum;
+        });
+
+        return factors;
     }
 }
