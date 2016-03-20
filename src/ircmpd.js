@@ -1,12 +1,14 @@
 // vi:expandtab sw=4 ts=4
 
-import * as mpd from "mpd";
+import * as dazeus from "dazeus";
 import * as dazeus_util from "dazeus-util";
+import * as mpd from "mpd";
 
 export default class IRCMPD {
-    constructor(options){
+    constructor(dazeus_options, mpd_options){
         this.search_results_ = [];
-        this.mpdc = mpd.connect(options);
+        this.mpdc = mpd.connect(mpd_options);
+        this.pluginhost = mpd_options.pluginhost;
         var that = this;
         this.mpdc.on('ready', function() {
             // update configuration
@@ -24,6 +26,15 @@ export default class IRCMPD {
             console.log(msg);
           });
         });
+
+        this.subcommand_handlers = {}
+        this.dazeus = dazeus.connect(dazeus_options, () => {
+            this.dazeus.onCommand("mpd", function (network, user, channel, command, line, ... args) {
+                var subcommand = args[0];
+                that._on_irc_command(network, user, channel, subcommand, args.slice(1));
+            });
+        });
+
     }
 
     search (str) {
@@ -129,6 +140,17 @@ export default class IRCMPD {
         });
     }
 
+    /* register an }mpd subcommand handler, it should return a promise that would return
+     * a message to go on IRC. example:
+     * > on('foo', () => {
+     * >   return new Promise((resolve) => { resolve("Hello world"); });
+     * > });
+     * now, "}mpd foo" would return "Hello world" on IRC
+     */
+    on(subcommand, callback) {
+        this.subcommand_handlers[subcommand] = callback;
+    }
+
     _parse_keyvalue(msg, callback) {
         var i = 0;
         while(i < msg.length) {
@@ -148,6 +170,54 @@ export default class IRCMPD {
             var value = line.substr(pos + 2);
             callback(key, value);
         };
+    }
+
+    _on_irc_command(network, user, channel, subcommand, args) {
+        var msg;
+        if(subcommand === "queue"){
+            var ssubcommand = args[0];
+            if(ssubcommand === "clear"){
+                msg = this.queue_clear();
+            } else {
+                msg = this.queue(args);
+            }
+        }
+        else if(subcommand === "search"){
+            msg = this.search(args);
+        }
+        else if(subcommand === "lastsearch"){
+            msg = this.last_search();
+        }
+        else if(subcommand === "list"){
+            msg = this.list();
+        }
+        else if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
+            msg = this.currentplaying();
+        } else {
+            var handler = this.subcommand_handlers[subcommand];
+            if(handler) {
+                msg = handler(command, args);
+            } else {
+                msg = new Promise((resolve) => {
+                    resolve("Unknown command: " + subcommand);
+                });
+            }
+        }
+
+        msg.then((msg) => {
+            var host = "";
+            if(typeof this.pluginhost === 'string') {
+                host = "[" + this.pluginhost + "] ";
+            }
+            var lines = msg.split("\n").filter((line) => { return line.length > 0; });
+            if(lines.length > 0){
+                for(var i = 0; i < lines.length; i += 1){
+                    lines[i] = host + lines[i];
+                }
+            }
+            msg = lines.join("\n");
+            this.dazeus.message(network, channel, msg);
+        }, console.error );
     }
 
     static yargs() {
