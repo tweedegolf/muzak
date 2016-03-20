@@ -303,7 +303,7 @@ export default class IRCMPD {
 
     currentplaying(){
         return new Promise((resolve, reject) => {
-            this._currentplaying.then((song) => {
+            this._currentplaying().then((song) => {
                 resolve(this.pretty_mpd_song(song));
             }, reject);
         });
@@ -479,6 +479,7 @@ export default class IRCMPD {
             throw "No user found for email " + email;
         }
 
+        this.message("User " + user.nick + " won! :)");
         var print_song = (next_song) => {
             var user = user.nick;
             var song = pretty_mdp_song(next_song);
