@@ -3,49 +3,56 @@
 import * as mpd from "mpd";
 
 export default class IRCMPD {
-    constructor(){
+    constructor(options){
         this.search_results_ = [];
+        this.mpdc = mpd.connect(options);
+        var that = this;
+        this.mpdc.on('ready', function() {
+            // update configuration
+            that.mpdc.sendCommand("consume 1", function(err, msg) {
+                if (err) throw err;
+            });
+          console.log("ready");
+        });
+        this.mpdc.on('system', function(name) {
+          console.log("update", name);
+        });
+        this.mpdc.on('system-player', function() {
+          that.mpdc.sendCommand(mpd.cmd("status", []), function(err, msg) {
+            if (err) throw err;
+            console.log(msg);
+          });
+        });
     }
 
-    search (mpdc, str) {
+    search (str) {
         return new Promise((resolve, reject) => {
-            mpdc.sendCommand(mpd.cmd("search", ["any", str]), (err, msg) => {
-                if (err) throw err;
+            this.mpdc.sendCommand(mpd.cmd("search", ["any", str]), (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
                 var result;
                 var results = [];
-                var i = 0;
-                while(i < msg.length) {
-                    var linepos = msg.indexOf("\n", i);
-                    if(linepos == -1) linepos = msg.length;
-                    var line = msg.substr(i, linepos - i);
-                    i = linepos + 1;
-
-                    if(line == '') {
-                        continue;
-                    }
-                    var pos = line.indexOf(":");
-                    if(pos == -1) {
-                        throw new Error("Misunderstood line from mpd search: " + line);
-                    }
-                    var key = line.substr(0, pos);
-                    var value = line.substr(pos + 2);
+                this._parse_keyvalue(msg, (key, value) => {
                     if(key == "file") {
                         if(result) results.push(result);
                         result = {};
                     }
                     result[key] = value;
-                };
+                });
                 if(result) {
                     results.push(result);
                 }
-                this.search_results_ = results.slice(1, 10);
+                this.search_results_ = results.slice(0, 10);
+                this.parse_results();
                 resolve(this.parse_results());
             });
         });
     }
 
     parse_results() {
-        var msg = "";
         var listed_id = 0;
         var pretty_results = []
         this.search_results_.forEach((e) => {
@@ -57,22 +64,35 @@ export default class IRCMPD {
             pretty.title = e.Title;
             pretty_results.push(pretty);
         });
-        this.pretty_search_results_ = pretty_results;
-        this.pretty_search_results_.forEach((e) => {
-            msg += e.listed_id + ": " + e.artist + " - " + e.title + "\n";
+
+        var msg = "";
+        this.pretty_results_ = pretty_results;
+        pretty_results.forEach((e) => {
+            msg += e.listed_id + ": " + this.pretty_song(e) + "\n";
         });
-        console.log(msg);
         return msg;
     }
 
+    pretty_song(pretty_result_song){
+        var e = pretty_result_song;
+        return e.artist + " - " + e.title;
+    }
+
     last_search(){
-        console.log("lastseasrch");
-        return JSON.stringify(this.search_results_);
+        return new Promise((resolve) => {
+            resolve(this.parse_results());
+        });
     }
 
     queue (song_id) {
-        this.queue_.push(song_id);
-        return "Queued " + song_id;
+        var song = this.pretty_results_[song_id];
+        console.log(song);
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("add", [song.id]), (err, msg) => {
+                if (err) throw err;
+                resolve("Queued " + this.pretty_song(song));
+            });
+        });
     }
 
     queue_clear() {
@@ -93,7 +113,40 @@ export default class IRCMPD {
     }
 
     currentplaying(){
-        return "Now playing Floep";
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand('currentsong', (err, msg) => {
+                if(err) {
+                    reject(err);
+                    return;
+                }
+                var s = {};
+                this._parse_keyvalue(msg, (key, value) => {
+                    s[key] = value;
+                });
+                resolve("Now playing: " + s.Artist + " - " + s.Title);
+            });
+        });
+    }
+
+    _parse_keyvalue(msg, callback) {
+        var i = 0;
+        while(i < msg.length) {
+            var linepos = msg.indexOf("\n", i);
+            if(linepos == -1) linepos = msg.length;
+            var line = msg.substr(i, linepos - i);
+            i = linepos + 1;
+
+            if(line == '') {
+                continue;
+            }
+            var pos = line.indexOf(":");
+            if(pos == -1) {
+                throw new Error("Incorrect line from mpd: " + line);
+            }
+            var key = line.substr(0, pos);
+            var value = line.substr(pos + 2);
+            callback(key, value);
+        };
     }
 };
 
