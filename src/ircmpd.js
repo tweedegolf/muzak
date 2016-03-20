@@ -43,7 +43,6 @@ export default class IRCMPD {
               if(status.state === "stop") {
                   that._queue_next();
               }
-              console.log(status);
           });
         });
 
