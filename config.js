@@ -10,5 +10,8 @@ export default {
             "issue_close": 1,
             "issue_update": 1
         }
+    },
+    "server": {
+        "port": 8080
     }
 }

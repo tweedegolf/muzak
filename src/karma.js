@@ -23,6 +23,7 @@ export default class Karma {
 
         // remove old events (since the start of the day)
         this.delete_old();
+        this.listen();
     }
 
     /**
@@ -30,7 +31,7 @@ export default class Karma {
      */
     listen() {
 
-        ircmpd.on('add-karma', (command, [email, points]) => {
+        this.ircmpd.on('add-karma', (command, [email, points]) => {
             return new Promise((resolve) => {
                 this.add(email, points, 'manual added via irc');
 
@@ -38,23 +39,23 @@ export default class Karma {
             });
         });
 
-        ircmpd.on('pop', () => {
+        this.ircmpd.on('pop', () => {
             return new Promise((resolve) => {
                 var email = this.pop();
+
                 if (email) {
                     this.add(email, -1, 'manual pop via irc');
-
                     resolve();
                 } else {
-
                     resolve('no users present');
                 }
             });
         });
 
-        ircmpd.on('karma-table', (command, [email, points]) => {
+        this.ircmpd.on('karma-table', () => {
             return new Promise((resolve) => {
                 var table = new AsciiTable();
+
                 _.forEach(this.get_table(), ([score, email]) => {
                     table.addRow(email, AsciiTable.align(
                         AsciiTable.RIGHT,

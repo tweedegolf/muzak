@@ -1,6 +1,6 @@
 // vi:expandtab sw=4 ts=4
 import * as dazeus_util from "dazeus-util";
-import server from './hook_server';
+import HookServer from './hook_server';
 import IRCMPD from "./ircmpd"
 import Karma from './karma';
 
@@ -12,9 +12,7 @@ var mpd_options = mpdOptionsFromArgv(argv);
 
 var ircmpd = new IRCMPD(dazeus_options, mpd_options);
 var karma = new Karma(ircmpd);
-
-server.karma = karma;
-server.listen(8080);
+var server = new HookServer(ircmpd, karma);
 
 function mpdOptionsFromArgv (argv) {
     var options = {};
