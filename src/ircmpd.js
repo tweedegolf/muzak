@@ -99,9 +99,13 @@ export default class IRCMPD {
     }
 
     queue (song_id) {
-        var song = this.pretty_results_[song_id];
-        console.log(song);
         return new Promise((resolve, reject) => {
+            if(!this.pretty_results_ || this.pretty_results_.length <= song_id) {
+                reject("There was no such result " + song_id);
+                return;
+            }
+            var song = this.pretty_results_[song_id];
+            console.log(song);
             this.mpdc.sendCommand(mpd.cmd("add", [song.id]), (err, msg) => {
                 if (err) throw err;
                 resolve("Queued " + this.pretty_song(song));
@@ -231,7 +235,9 @@ export default class IRCMPD {
 
         if(msg) msg.then((msg) => {
             this._message(network, channel, msg);
-        }, console.error );
+        }, (error) => {
+            this._message(network, channel, "Command failed: " + error );
+        });
     }
 
     static yargs() {
