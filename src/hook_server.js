@@ -7,7 +7,6 @@ app.get('/', (req, res) => {
 });
 
 app.post('/hooks/commit', (req, res) => {
-  console.log('received hook');
   res.send('Hello World');
 });
 
