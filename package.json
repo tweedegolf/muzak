@@ -1,0 +1,22 @@
+{
+  "name": "muzak",
+  "version": "0.0.1",
+  "description": "irc music player with jira and gitlab integration",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/tweedegolf/muzak.git"
+  },
+  "author": "Sjors, Nick, Marlon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tweedegolf/muzak/issues"
+  },
+  "homepage": "https://github.com/tweedegolf/muzak#readme",
+  "dependencies": {
+    "dazeus": "^0.7.1"
+  }
+}
