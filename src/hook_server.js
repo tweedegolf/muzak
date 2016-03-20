@@ -1,8 +1,14 @@
-var express = require('express');
+import express from 'express';
+
 var app = express();
 
-app.get('/', function (req, res) {
-  res.send('Hello World')
-})
+app.get('/', (req, res) => {
+  res.send('Welcome to MUZAK, please use IRC to interact.');
+});
 
-module.exports = app;
+app.post('/hooks/commit', (req, res) => {
+  console.log('received hook');
+  res.send('Hello World');
+});
+
+export default app;
