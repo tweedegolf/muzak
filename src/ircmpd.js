@@ -45,7 +45,6 @@ export default class IRCMPD {
     }
 
     parse_results() {
-        var msg = "";
         var listed_id = 0;
         var pretty_results = []
         this.search_results_.forEach((e) => {
@@ -57,17 +56,18 @@ export default class IRCMPD {
             pretty.title = e.Title;
             pretty_results.push(pretty);
         });
-        this.pretty_search_results_ = pretty_results;
-        this.pretty_search_results_.forEach((e) => {
+
+        var msg = "";
+        pretty_results.forEach((e) => {
             msg += e.listed_id + ": " + e.artist + " - " + e.title + "\n";
         });
-        console.log(msg);
         return msg;
     }
 
     last_search(){
-        console.log("lastseasrch");
-        return JSON.stringify(this.search_results_);
+        return new Promise((resolve) => {
+            resolve(this.parse_results());
+        });
     }
 
     queue (song_id) {
