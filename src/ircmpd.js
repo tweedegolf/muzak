@@ -18,7 +18,7 @@ export default class IRCMPD {
         this.network = mpd_options.network;
         this.channel = mpd_options.channel;
         this.users = storage.getItem(STORAGE_KEY) || [];
-        this.next_email_provider = () => { return undefined; }
+        this.user_score_provider = () => { return undefined; }
         /* user: { email: ["foo@bar.tld", "quux@bar.tld"], playlist: "foo", nick: "foo"} */
 
         var that = this;
@@ -185,6 +185,11 @@ export default class IRCMPD {
             msg += e.listed_id + ": " + this.pretty_song(e) + "\n";
         });
         return msg;
+    }
+
+    pretty_mpd_song(mpd_result_song){
+        var e= mpd_result_song;
+        return e.Artist + " - " + e.Title;
     }
 
     pretty_song(pretty_result_song){
@@ -413,51 +418,57 @@ export default class IRCMPD {
     }
 
     _queue_next() {
-        var user;
-        var attempts = 0;
-        var message_sent = false;
-        var done = false;
-        while(!user && !done && attempts++ < 20) {
-            // we're stopped, time to queue the next song and fire it up again
-            var email = this.next_email_provider();
-            if(!email) {
-                if(!message_sent) {
-                    this.message("I wanted to restart the queue, but looks like there were no eligible users :(");
-                    message_sent = true;
-                }
-                continue;
-            }
-            console.log("Trying to play to email: ", email);
-            user = this.email_to_user(email);
-            console.log("Trying to play to user: ", user);
-            if(user && user.playlist) {
-                var handle_error = (err) => {
-                    console.log(err);
-                    if(err === "[50@0] {listplaylistinfo} No such playlist") {
-                        // ignore
-                    }
-                    else if(!message_sent) {
-                        this.message("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
-                        message_sent = true;
-                    }
-                };
+        // var users = this.user_score_provider();
+        var users = [
+            ["nick@astrant.net", 0.5],
+            ["marlon@tweedegolf.com", 0.25],
+            ["github@sjorsgielen.nl", 0.25],
+        ];
+        console.log(users);
+        console.log(this.users);
+        // TODO: Filter users that don't have queued songs
 
-                var promise = this._playlistinfo(user.playlist);
-                console.log("Trying to retrieve playlistinfo");
-                promise.then((plinfo) => {
-                    console.log("Got plinfo: ", plinfo);
-                    if(plinfo.length > 0) {
-                        console.log("Playing next track from plinfo:");
-                        var next = plinfo[0];
-                        console.log(plinfo);
-                        this._queue(next.file).then(() => {
-                            this._play().then(() => {}, handle_error);;
-                            done = true;
-                        }, handle_error);
-                    }
-                }, handle_error);
+        // we're stopped, time to queue the next song and fire it up again
+        var email;
+        while(!email){
+            for(var i = 0; i < users.length; i += 1){
+                var dice = Math.random();
+                var chance = users[i][1];
+                var m = users[i][0];
+                if(dice <= chance){
+                    email = users[i][0];
+                    console.log("Mail ", email, " won!");
+                    break;
+                }
             }
         }
+        var user = this.email_to_user(email);
+        if(!user) {
+            throw "No user found for email " + email;
+        }
+        console.log("That's user: ", user);
+        var handle_error = (err) => {
+            console.log(err);
+            if(err === "[50@0] {listplaylistinfo} No such playlist") {
+                // ignore
+            }
+            else if(!message_sent) {
+                this.message("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
+                message_sent = true;
+            }
+        };
+
+        var promise = this._playlistinfo(user.playlist);
+        promise.then((plinfo) => {
+            if(plinfo.length > 0) {
+                console.log("Playing next track from plinfo:", plinfo[0]);
+                var next = plinfo[0];
+                this._queue(next.file).then(() => {
+                    this._play().then(() => {}, handle_error);;
+                    done = true;
+                }, handle_error);
+            }
+        }, handle_error);
     }
 
     email_to_user(email) {
@@ -495,8 +506,8 @@ export default class IRCMPD {
         storage.setItem(STORAGE_KEY, this.users);
     }
 
-    set_next_email_provider(provider) {
-        this.next_email_provider = provider;
+    set_user_score_provider(provider) {
+        this.user_score_provider = provider;
     }
 
     static yargs() {
