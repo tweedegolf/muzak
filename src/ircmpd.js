@@ -3,6 +3,7 @@
 import * as dazeus from "dazeus";
 import * as dazeus_util from "dazeus-util";
 import * as mpd from "mpd";
+import * as _ from "lodash";
 
 export default class IRCMPD {
     constructor(dazeus_options, mpd_options){
@@ -137,17 +138,28 @@ export default class IRCMPD {
     }
 
     simple_commands(command){
-        mapping = [["next", "Next!"], ["play", "Playing!"], ["pause", "Pausing!"], ["stop", "Stopping!"]];
+        var mapping = [
+            ["next", "Next!"],
+        ["play", "Playing!"],
+        ["pause", "Pausing!"],
+        ["stop", "Stopping!"]
+            ];
+
+        var found_command;
         mapping.forEach((stored_commands) => {
             if(stored_commands[0] === command){
-                this.mpdc.sendCommand(mpd.cmd(stored_commands[0], []), (err, msg) => {
-                    if (err) throw err;
-                    resolve(stored_commands[1]);
-                });
+                found_command = stored_commands;
+                return false;
             }
         });
-    }
 
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd(found_command[0], []), (err, msg) => {
+                if (err) throw err;
+                resolve(found_command[1]);
+            });
+        });
+    }
 
     next(){
         simple_commands("next");
@@ -253,6 +265,9 @@ export default class IRCMPD {
         }
         else if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
             msg = this.currentplaying();
+        }
+        else if(_.indexOf(["play", "pause", "next", "stop", "crash"], subcommand) !== -1 ){
+            msg = this.simple_commands(subcommand);
         } else {
             var handler = this.subcommand_handlers[subcommand];
             if(handler) {
