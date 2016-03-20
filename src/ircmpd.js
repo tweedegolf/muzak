@@ -125,6 +125,18 @@ export default class IRCMPD {
         });
     }
 
+    _playlistmove(name, num, pos) {
+        return new Promise((resolve, reject) => {
+            this.mpdc.sendCommand(mpd.cmd("playlistmove", [name, num, pos]), (err, msg) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            });
+        });
+    }
+
     status(callback) {
         this.mpdc.sendCommand("status", (err, msg) => {
             if(err) throw err;
@@ -447,28 +459,39 @@ export default class IRCMPD {
             throw "No user found for email " + email;
         }
         console.log("That's user: ", user);
-        var handle_error = (err) => {
-            console.log(err);
-            if(err === "[50@0] {listplaylistinfo} No such playlist") {
-                // ignore
-            }
-            else if(!message_sent) {
-                this.message("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
-                message_sent = true;
-            }
-        };
 
-        var promise = this._playlistinfo(user.playlist);
-        promise.then((plinfo) => {
-            if(plinfo.length > 0) {
-                console.log("Playing next track from plinfo:", plinfo[0]);
+        this._move_playlist_to_playing(user.playlist).then(() => {},
+            (error) => {
+                if(!message_sent) {
+                    this.message(error);
+                    message_sent = true;
+                }
+            });
+    }
+
+    _move_playlist_to_playing(playlist_name) {
+        return new Promise((resolve, reject) => {
+            var handle_error = (err) => {
+                console.log(err);
+                reject("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
+            };
+
+            var promise = this._playlistinfo(playlist_name);
+            promise.then((plinfo) => {
+                if(plinfo.length == 0) {
+                    reject("Playlist is empty");
+                    return;
+                }
                 var next = plinfo[0];
                 this._queue(next.file).then(() => {
-                    this._play().then(() => {}, handle_error);;
-                    done = true;
+                    resolve();
+                    this._play().then(() => {
+                        // move track in playlist as well
+                        this._playlistmove(playlist_name, 0, plinfo.length - 1).then(() => {}, handle_error);
+                    }, handle_error);
                 }, handle_error);
-            }
-        }, handle_error);
+            }, handle_error);
+        });
     }
 
     email_to_user(email) {
