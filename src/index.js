@@ -19,47 +19,38 @@ mpd_client.on('system', function(name) {
   console.log("update", name);
 });
 mpd_client.on('system-player', function() {
-  mpd_client.sendCommand(cmd("status", []), function(err, msg) {
+  mpd_client.sendCommand(mpd.cmd("status", []), function(err, msg) {
     if (err) throw err;
     console.log(msg);
   });
 });
 var dazeus_options = dazeus_util.optionsFromArgv(argv);
 let dazeus_client = dazeus.connect(dazeus_options, () => {
-	dazeus_client.onCommand("mpd", function (network, user, channel, command, line, ... args) {
-		console.log(command);
-		var msg = "";
-		var subcommand = args[0];
-		if(subcommand === "queue"){
-			var ssubcommand = args[1];
-			if(ssubcommand === "clear"){
-				msg = ircmpd.queue_clear();
-			} else {
-				msg = ircmpd.queue(args.slice(1));
-			}
-		}
-		if(subcommand === "search"){
-			msg = ircmpd.search(mpd_client, args.slice(1), function (results) {
-				if(results.length == 0) {
-					dazeus_client.message(network, channel, "No results for that search query!");
-					return;
-				}
-				dazeus_client.message(network, channel, JSON.stringify(results[0]));
-				if(results.length > 1) {
-					dazeus_client.message(network, channel, JSON.stringify(results[1]));
-					if(results.length > 2) {
-						var more = results.length - 2;
-						dazeus_client.message(network, channel, "...and " + more + " more hits");
-					}
-				}
-			});
-		}
-		if(subcommand === "list"){
-			msg = ircmpd.list();
-		}
+    dazeus_client.onCommand("mpd", function (network, user, channel, command, line, ... args) {
+        var msg = "";
+        var subcommand = args[0];
+        if(subcommand === "queue"){
+            var ssubcommand = args[1];
+            if(ssubcommand === "clear"){
+                msg = ircmpd.queue_clear();
+            } else {
+                msg = ircmpd.queue(args.slice(1));
+            }
+        }
+        if(subcommand === "search"){
+            msg = ircmpd.search(mpd_client, args.slice(1));
+        }
+        if(subcommand === "lastsearch"){
+            msg = ircmpd.last_search();
+        }
+        if(subcommand === "list"){
+            msg = ircmpd.list();
+        }
 
-		dazeus_client.message(network, channel, msg);
-	});
+        msg.then((msg) => {
+            dazeus_client.message(network, channel, msg);
+        }, console.error );
+    });
 });
 
 server.listen(8080);
