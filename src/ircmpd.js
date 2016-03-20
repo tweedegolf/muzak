@@ -23,9 +23,11 @@ export default class IRCMPD {
           console.log("update", name);
         });
         this.mpdc.on('system-player', function() {
-          that.mpdc.sendCommand(mpd.cmd("status", []), function(err, msg) {
-            if (err) throw err;
-            console.log(msg);
+          that.status(function(status) {
+              if(status.state === "stop") {
+                  that._queue_next();
+              }
+              console.log(status);
           });
         });
 
@@ -37,6 +39,17 @@ export default class IRCMPD {
             });
         });
 
+    }
+
+    status(callback) {
+        this.mpdc.sendCommand("status", (err, msg) => {
+            if(err) throw err;
+            var s = {};
+            this._parse_keyvalue(msg, (key, value) => {
+                s[key] = value;
+            });
+            callback(s);
+        });
     }
 
     search (str) {
@@ -238,6 +251,11 @@ export default class IRCMPD {
         }, (error) => {
             this._message(network, channel, "Command failed: " + error );
         });
+    }
+
+    _queue_next() {
+        // we're stopped, time to queue the next song and fire it up again
+        console.log("*** Time to queue the next track ***");
     }
 
     static yargs() {
