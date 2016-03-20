@@ -479,7 +479,17 @@ export default class IRCMPD {
             throw "No user found for email " + email;
         }
 
-        this._move_playlist_to_playing(user.playlist).then(() => {},
+        var print_song = (next_song) => {
+            var user = user.nick;
+            var song = pretty_mdp_song(next_song);
+            var msg = sprintf("User %s won: playing %s", user, song);
+            // console.log(msg);
+            //FIXME: this._message doesn't seem to work here.
+            // this._message(this.network, this.channel, msg);
+            this.message(msg);
+        };
+
+        this._move_playlist_to_playing(user.playlist, print_song).then(() => {},
             (error) => {
                 if(!message_sent) {
                     this.message(error);
@@ -488,10 +498,10 @@ export default class IRCMPD {
             });
     }
 
-    _move_playlist_to_playing(playlist_name) {
+    _move_playlist_to_playing(playlist_name, playing_next_callback) {
         return new Promise((resolve, reject) => {
             var handle_error = (err) => {
-                console.log(err);
+                console.error(err);
                 reject("Failed to retrieve playlist info for playlist " + user.playlist + ": " + err);
             };
 
@@ -504,6 +514,7 @@ export default class IRCMPD {
                 var next = plinfo[plinfo.length - 1];
                 this._queue(next.file).then(() => {
                     resolve();
+                    console.log(next);
                     this._play().then(() => {
                         // move track in playlist as well
                         this._playlistmove(playlist_name, plinfo.length - 1, 0).then(() => {}, handle_error);
