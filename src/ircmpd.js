@@ -271,6 +271,14 @@ export default class IRCMPD {
 
         return new Promise((resolve, reject) => {
             if(found_command){
+                if(command == "play") {
+                    this._currentplaying().then((s) => {
+                        if(!s.Artist && !s.Title) {
+                            // nothing currently playing, queue something!
+                            this._queue_next();
+                        }
+                    }, reject);
+                }
                 this.mpdc.sendCommand(mpd.cmd(found_command[0], []), (err, msg) => {
                     if (err) throw err;
                     resolve(found_command[1]);
@@ -296,6 +304,14 @@ export default class IRCMPD {
 
     currentplaying(){
         return new Promise((resolve, reject) => {
+            this._currentplaying.then((song) => {
+                resolve(this.pretty_mpd_song(song));
+            }, reject);
+        });
+    }
+
+    _currentplaying(){
+        return new Promise((resolve, reject) => {
             this.mpdc.sendCommand('currentsong', (err, msg) => {
                 if(err) {
                     reject(err);
@@ -305,7 +321,7 @@ export default class IRCMPD {
                 this._parse_keyvalue(msg, (key, value) => {
                     s[key] = value;
                 });
-                resolve(this.pretty_mpd_song(s));
+                resolve(s);
             });
         });
     }
