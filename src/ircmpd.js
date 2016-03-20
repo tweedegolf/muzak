@@ -3,6 +3,7 @@
 import * as dazeus from "dazeus";
 import * as dazeus_util from "dazeus-util";
 import * as mpd from "mpd";
+import * as _ from "lodash";
 
 export default class IRCMPD {
     constructor(dazeus_options, mpd_options){
@@ -23,9 +24,11 @@ export default class IRCMPD {
           console.log("update", name);
         });
         this.mpdc.on('system-player', function() {
-          that.mpdc.sendCommand(mpd.cmd("status", []), function(err, msg) {
-            if (err) throw err;
-            console.log(msg);
+          that.status(function(status) {
+              if(status.state === "stop") {
+                  that._queue_next();
+              }
+              console.log(status);
           });
         });
 
@@ -37,6 +40,17 @@ export default class IRCMPD {
             });
         });
 
+    }
+
+    status(callback) {
+        this.mpdc.sendCommand("status", (err, msg) => {
+            if(err) throw err;
+            var s = {};
+            this._parse_keyvalue(msg, (key, value) => {
+                s[key] = value;
+            });
+            callback(s);
+        });
     }
 
     search (str) {
@@ -99,6 +113,7 @@ export default class IRCMPD {
     }
 
     queue (song_id) {
+        var song = this.pretty_results_[song_id];
         return new Promise((resolve, reject) => {
             if(!this.pretty_results_ || this.pretty_results_.length <= song_id) {
                 reject("There was no such result " + song_id);
@@ -122,12 +137,45 @@ export default class IRCMPD {
         return "Queue: " + this.queue_.join();
     }
 
+    simple_commands(command){
+        var mapping = [
+            ["next", "Next!"],
+        ["play", "Playing!"],
+        ["pause", "Pausing!"],
+        ["stop", "Stopping!"]
+            ];
+
+        var found_command;
+        mapping.forEach((stored_commands) => {
+            if(stored_commands[0] === command){
+                found_command = stored_commands;
+                return false;
+            }
+        });
+
+        return new Promise((resolve, reject) => {
+            if(found_command){
+                this.mpdc.sendCommand(mpd.cmd(found_command[0], []), (err, msg) => {
+                    if (err) throw err;
+                    resolve(found_command[1]);
+                });
+            } else {
+                var available_commands = _.map(mapping, (e) => { return e[0]; });
+                reject("Simple command " + command + " is not defined. Try any of the following: " + JSON.stringify(available_commands));
+            }
+        });
+    }
+
+    next(){
+        simple_commands("next");
+    }
+
     play(){
-        return "Playing";
+        simple_commands("play");
     }
 
     pause(){
-        return "Pausing";
+        simple_commands("pause");
     }
 
     currentplaying(){
@@ -222,6 +270,9 @@ export default class IRCMPD {
         }
         else if(subcommand === "playing" || subcommand === "currentplaying" || subcommand === "np") {
             msg = this.currentplaying();
+        }
+        else if(_.indexOf(["play", "pause", "next", "stop", "crash"], subcommand) !== -1 ){
+            msg = this.simple_commands(subcommand);
         } else {
             var handler = this.subcommand_handlers[subcommand];
             if(handler) {
@@ -238,6 +289,11 @@ export default class IRCMPD {
         }, (error) => {
             this._message(network, channel, "Command failed: " + error );
         });
+    }
+
+    _queue_next() {
+        // we're stopped, time to queue the next song and fire it up again
+        console.log("*** Time to queue the next track ***");
     }
 
     static yargs() {
