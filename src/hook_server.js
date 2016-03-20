@@ -24,7 +24,12 @@ app.get('/', (req, res) => {
     res.send('Welcome to MUZAK, please use IRC to interact.');
 });
 
-
+/**
+ * Webhook for GitHub or GitLab commit endpoint
+ *
+ * @see https://developer.github.com/webhooks/
+ * @see https://gitlab.com/gitlab-org/gitlab-ce/blob/master/doc/web_hooks/web_hooks.md
+ */
 app.post('/commit', (req, res) => {
     var data = {};
 
@@ -44,6 +49,11 @@ app.post('/commit', (req, res) => {
     res.send('[' + moment().format('YYYY-MM-DD hh:mm') + '] hook processed');
 });
 
+/**
+ * Jira endpoint webhook endpoint
+ *
+ * @see https://developer.atlassian.com/jiradev/jira-apis/webhooks
+ */
 app.post('/issue/:key', function (req, res) {
     var data = req.body;
 
