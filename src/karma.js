@@ -125,7 +125,7 @@ export default class Karma {
         var score = 0;
 
         _.forEach(events, function (event) {
-            score += event.points - config.karma.decay * (time - event.time);
+            score += event.points * Math.min(1, 1 / Math.sqrt((time - event.time) / 100));
         });
 
         return score;
