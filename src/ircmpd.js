@@ -309,7 +309,7 @@ export default class IRCMPD {
                 this._parse_keyvalue(msg, (key, value) => {
                     s[key] = value;
                 });
-                resolve("Now playing: " + s.Artist + " - " + s.Title);
+                resolve(this.pretty_mpd_song(s));
             });
         });
     }
