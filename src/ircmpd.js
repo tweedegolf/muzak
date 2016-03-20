@@ -3,56 +3,85 @@
 import * as mpd from "mpd";
 
 export default class IRCMPD {
-	constructor(){
-		this.queue_ = [];
-	}
+    constructor(){
+        this.search_results_ = [];
+    }
 
-    search (mpdc, str, callback) {
-        var results = [];
-        mpdc.sendCommand(mpd.cmd("search", ["any", str]), (err, msg) => {
-            if (err) throw err;
-            var result;
-            var i = 0;
-            while(i < msg.length) {
-                var linepos = msg.indexOf("\n", i);
-                if(linepos == -1) linepos = msg.length;
-                var line = msg.substr(i, linepos - i);
-                i = linepos + 1;
+    search (mpdc, str) {
+        return new Promise((resolve, reject) => {
+            mpdc.sendCommand(mpd.cmd("search", ["any", str]), (err, msg) => {
+                if (err) throw err;
+                var result;
+                var results = [];
+                var i = 0;
+                while(i < msg.length) {
+                    var linepos = msg.indexOf("\n", i);
+                    if(linepos == -1) linepos = msg.length;
+                    var line = msg.substr(i, linepos - i);
+                    i = linepos + 1;
 
-                if(line == '') {
-                    continue;
+                    if(line == '') {
+                        continue;
+                    }
+                    var pos = line.indexOf(":");
+                    if(pos == -1) {
+                        throw new Error("Misunderstood line from mpd search: " + line);
+                    }
+                    var key = line.substr(0, pos);
+                    var value = line.substr(pos + 2);
+                    if(key == "file") {
+                        if(result) results.push(result);
+                        result = {};
+                    }
+                    result[key] = value;
+                };
+                if(result) {
+                    results.push(result);
                 }
-                var pos = line.indexOf(":");
-                if(pos == -1) {
-                    throw new Error("Misunderstood line from mpd search: " + line);
-                }
-                var key = line.substr(0, pos);
-                var value = line.substr(pos + 2);
-                if(key == "file") {
-                    if(result) results.push(result);
-                    result = {};
-                }
-                result[key] = value;
-            };
-            if(result) {
-                results.push(result);
-            }
-            callback(results);
+                this.search_results_ = results;
+                resolve(this.parse_results());
+            });
         });
     }
 
-	queue (song_id) {
-		this.queue_.push(song_id);
-		return "Queued " + song_id;
-	}
+    parse_results() {
+        var msg = "";
+        this.search_results_.forEach((e) => {
+            msg += e.Artist + " - " + e.Title + "\n";
+        });
+        console.log(msg);
+        return msg;
+    }
 
-	queue_clear() {
-		this.queue_ = [];
-		return "Queue cleared";
-	}
+    last_search(){
+        console.log("lastseasrch");
+        return JSON.stringify(this.search_results_);
+    }
 
-	list (){
-		return "Queue: " + this.queue_.join();
-	}
+    queue (song_id) {
+        this.queue_.push(song_id);
+        return "Queued " + song_id;
+    }
+
+    queue_clear() {
+        this.queue_ = [];
+        return "Queue cleared";
+    }
+
+    list (){
+        return "Queue: " + this.queue_.join();
+    }
+
+    play(){
+        return "Playing";
+    }
+
+    pause(){
+        return "Pausing";
+    }
+
+    currentplaying(){
+        return "Now playing Floep";
+    }
 };
 
